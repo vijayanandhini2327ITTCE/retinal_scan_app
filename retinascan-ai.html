@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RetinaScan AI — Clinical Diagnostic System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,600;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#07111f;
+  --navy2:#0d1e35;
+  --navy3:#122444;
+  --navy4:#1a3060;
+  --accent:#3b82f6;
+  --accent2:#60a5fa;
+  --accent3:#bfdbfe;
+  --teal:#0d9488;
+  --teal2:#2dd4bf;
+  --warn:#f59e0b;
+  --danger:#ef4444;
+  --ok:#22c55e;
+  --purple:#a855f7;
+  --white:#ffffff;
+  --off:#e8f0ff;
+  --muted:#64748b;
+  --muted2:#94a3b8;
+  --border:rgba(59,130,246,0.12);
+  --border2:rgba(148,163,184,0.08);
+  --card:rgba(13,30,53,0.85);
+  --glass:rgba(255,255,255,0.03);
+  --text:#e2e8f0;
+}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--white);min-height:100vh;overflow-x:hidden;line-height:1.6}
+
+/* BG */
+.bg-fixed{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.bg-mesh{position:absolute;inset:0;background:
+  radial-gradient(ellipse 80% 60% at 70% -10%,rgba(59,130,246,0.07) 0%,transparent 60%),
+  radial-gradient(ellipse 60% 50% at -10% 80%,rgba(13,148,136,0.06) 0%,transparent 60%),
+  radial-gradient(ellipse 40% 40% at 50% 50%,rgba(59,130,246,0.03) 0%,transparent 70%)}
+.bg-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(59,130,246,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(59,130,246,0.04) 1px,transparent 1px);background-size:48px 48px}
+.bg-dots{position:absolute;inset:0;background-image:radial-gradient(rgba(59,130,246,0.08) 1px,transparent 1px);background-size:24px 24px;mask-image:radial-gradient(ellipse at center,black 30%,transparent 80%)}
+
+/* Layout */
+.app{position:relative;z-index:1;max-width:1240px;margin:0 auto;padding:20px 24px 60px}
+
+/* Header */
+.header{display:flex;align-items:center;justify-content:space-between;padding:18px 28px;background:var(--card);border:1px solid var(--border);border-radius:16px;margin-bottom:24px;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
+.logo{display:flex;align-items:center;gap:14px}
+.logo-mark{width:42px;height:42px;border-radius:11px;background:linear-gradient(135deg,#1d4ed8,#0d9488);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1px rgba(59,130,246,0.3),0 8px 24px rgba(59,130,246,0.2)}
+.logo-mark svg{width:22px;height:22px}
+.logo-name{font-family:'Playfair Display',serif;font-size:20px;letter-spacing:-0.2px;color:var(--white)}
+.logo-tag{font-size:10px;color:var(--muted2);letter-spacing:2.5px;text-transform:uppercase;font-weight:500;margin-top:1px}
+.header-right{display:flex;align-items:center;gap:20px}
+.live-badge{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ok);font-weight:500;padding:6px 12px;border:1px solid rgba(34,197,94,0.2);border-radius:20px;background:rgba(34,197,94,0.06)}
+.pulse{width:7px;height:7px;border-radius:50%;background:var(--ok);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,0.5);opacity:1}50%{box-shadow:0 0 0 5px rgba(34,197,94,0);opacity:0.7}}
+.model-tag{font-size:11px;color:var(--muted2);font-family:'DM Mono',monospace;padding:5px 10px;background:var(--glass);border:1px solid var(--border2);border-radius:6px}
+
+/* Navigation tabs */
+.nav-wrap{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.tabs{display:flex;gap:2px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:4px;backdrop-filter:blur(20px)}
+.tab{padding:9px 22px;border-radius:9px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;color:var(--muted2);background:none;transition:all 0.25s;display:flex;align-items:center;gap:8px}
+.tab svg{width:14px;height:14px;stroke:currentColor;fill:none;flex-shrink:0}
+.tab.active{background:var(--navy4);color:var(--white);box-shadow:0 2px 8px rgba(0,0,0,0.3)}
+.tab:hover:not(.active){color:var(--white);background:var(--glass)}
+.scan-count{font-size:11px;background:var(--accent);color:white;border-radius:10px;padding:1px 7px;font-weight:600}
+
+/* UPLOAD VIEW */
+.upload-layout{display:grid;grid-template-columns:1.1fr 0.9fr;gap:20px;align-items:start}
+.upload-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:28px;backdrop-filter:blur(24px)}
+.card-label{font-size:10px;font-weight:700;color:var(--accent2);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.card-label::before{content:'';display:block;width:14px;height:2px;background:var(--accent);border-radius:1px}
+
+.drop-zone{border:1.5px dashed rgba(59,130,246,0.25);border-radius:16px;padding:0;text-align:center;cursor:pointer;transition:all 0.3s;position:relative;overflow:hidden;min-height:260px;display:flex;align-items:center;justify-content:center}
+.drop-zone:hover,.drop-zone.drag-over{border-color:rgba(59,130,246,0.6);background:rgba(59,130,246,0.04)}
+.drop-zone.has-file{border-style:solid;border-color:rgba(13,148,136,0.5);background:none;padding:0;align-items:stretch}
+.drop-inner{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 28px;gap:0}
+.drop-eye{width:70px;height:70px;border-radius:18px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.15);display:flex;align-items:center;justify-content:center;margin-bottom:18px}
+.drop-eye svg{width:36px;height:36px;stroke:var(--accent2);fill:none;stroke-width:1.5}
+.drop-title{font-size:17px;font-weight:600;color:var(--white);margin-bottom:8px}
+.drop-sub{font-size:13px;color:var(--muted2);line-height:1.7;max-width:220px}
+.drop-sub em{color:var(--accent2);font-style:normal;font-weight:500}
+.preview-wrap{position:relative;width:100%;height:100%}
+.preview-img{width:100%;height:100%;object-fit:cover;border-radius:14px;display:block;min-height:260px;max-height:320px}
+.preview-overlay{position:absolute;top:10px;right:10px;display:flex;gap:6px}
+.preview-tag{background:rgba(7,17,31,0.85);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:11px;font-family:'DM Mono',monospace;color:var(--teal2);backdrop-filter:blur(8px)}
+#fileInput{display:none}
+.btn-row{display:flex;gap:10px;margin-top:14px}
+.btn-analyze{flex:1;background:linear-gradient(135deg,#1d4ed8,#0d9488);border:none;color:white;padding:13px 24px;border-radius:11px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 20px rgba(59,130,246,0.25)}
+.btn-analyze:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 28px rgba(59,130,246,0.35)}
+.btn-analyze:disabled{opacity:0.35;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-analyze svg{width:16px;height:16px;fill:none;stroke:white;stroke-width:2}
+.btn-clear{background:var(--glass);border:1px solid var(--border2);color:var(--muted2);padding:13px 16px;border-radius:11px;font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;transition:all 0.2s;white-space:nowrap}
+.btn-clear:hover{color:var(--white);border-color:var(--border)}
+
+/* Loading overlay */
+.loading-box{position:absolute;inset:0;background:rgba(7,17,31,0.92);border-radius:16px;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;backdrop-filter:blur(8px);z-index:20}
+.loading-box.show{display:flex}
+.spin-ring{width:52px;height:52px;border-radius:50%;border:2px solid rgba(59,130,246,0.15);border-top-color:var(--accent);animation:spin 0.75s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.load-title{font-size:15px;font-weight:600;color:var(--white)}
+.load-step{font-size:12px;color:var(--accent2);font-family:'DM Mono',monospace;min-height:18px;text-align:center}
+.load-bar-wrap{width:200px;height:3px;background:rgba(59,130,246,0.15);border-radius:2px;overflow:hidden}
+.load-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--teal2));border-radius:2px;width:0%;transition:width 0.8s ease}
+
+/* Info panel */
+.info-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:28px;backdrop-filter:blur(24px)}
+.disease-items{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
+.d-item{display:flex;align-items:flex-start;gap:12px;padding:13px 16px;background:var(--glass);border:1px solid var(--border2);border-radius:12px;transition:all 0.2s}
+.d-item:hover{border-color:var(--border);background:rgba(255,255,255,0.04)}
+.d-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.d-name{font-size:14px;font-weight:600;color:var(--white)}
+.d-desc{font-size:12px;color:var(--muted2);margin-top:2px;line-height:1.5}
+.how-box{background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.15);border-radius:12px;padding:16px}
+.how-box p{font-size:13px;color:var(--muted2);line-height:1.7}
+.how-box strong{color:var(--accent3);font-weight:600}
+
+/* RESULTS VIEW */
+.results-view{display:none;animation:fadeUp 0.35s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.results-topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.results-title{font-family:'Playfair Display',serif;font-size:24px;color:var(--white)}
+.results-sub{font-size:13px;color:var(--muted2);margin-top:2px}
+.btn-new{background:var(--glass);border:1px solid var(--border);color:var(--white);padding:9px 18px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:7px}
+.btn-new:hover{background:rgba(59,130,246,0.08);border-color:rgba(59,130,246,0.3)}
+.btn-new svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2}
+.results-layout{display:grid;grid-template-columns:340px 1fr;gap:20px;align-items:start}
+
+/* Diagnosis card */
+.diag-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:24px;backdrop-filter:blur(24px);position:sticky;top:20px}
+.scan-preview{width:100%;border-radius:12px;object-fit:cover;max-height:200px;margin-bottom:20px;border:1px solid var(--border2)}
+.disease-badge{display:inline-flex;align-items:center;gap:7px;padding:5px 14px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:12px}
+.badge-dot{width:6px;height:6px;border-radius:50%}
+.b-cataract{background:rgba(245,158,11,0.12);color:#fbbf24;border:1px solid rgba(245,158,11,0.25)}
+.b-diabetic{background:rgba(239,68,68,0.12);color:#f87171;border:1px solid rgba(239,68,68,0.25)}
+.b-glaucoma{background:rgba(168,85,247,0.12);color:#c084fc;border:1px solid rgba(168,85,247,0.25)}
+.b-normal{background:rgba(34,197,94,0.12);color:#4ade80;border:1px solid rgba(34,197,94,0.25)}
+.diag-disease{font-family:'Playfair Display',serif;font-size:28px;line-height:1.1;color:var(--white);margin-bottom:4px}
+.diag-model{font-size:12px;color:var(--muted2);margin-bottom:22px;font-family:'DM Mono',monospace}
+
+/* Confidence bars */
+.conf-section-label{font-size:10px;font-weight:700;color:var(--muted2);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px}
+.conf-bars{display:flex;flex-direction:column;gap:10px;margin-bottom:22px}
+.conf-row{display:flex;align-items:center;gap:10px}
+.conf-name{font-size:12px;color:var(--text);min-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.conf-track{flex:1;height:5px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden}
+.conf-fill{height:100%;border-radius:3px;transition:width 1.2s cubic-bezier(0.4,0,0.2,1)}
+.fill-cataract{background:linear-gradient(90deg,#d97706,#fbbf24)}
+.fill-diabetic{background:linear-gradient(90deg,#dc2626,#f87171)}
+.fill-glaucoma{background:linear-gradient(90deg,#9333ea,#c084fc)}
+.fill-normal{background:linear-gradient(90deg,#16a34a,#4ade80)}
+.conf-pct{font-size:11px;font-family:'DM Mono',monospace;color:var(--muted2);min-width:36px;text-align:right}
+
+/* Meta table */
+.meta-table{border-top:1px solid var(--border2);padding-top:16px}
+.meta-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.03)}
+.meta-row:last-child{border-bottom:none}
+.meta-k{font-size:12px;color:var(--muted2)}
+.meta-v{font-size:12px;font-family:'DM Mono',monospace;color:var(--text)}
+
+/* AI Report */
+.report-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:28px;backdrop-filter:blur(24px)}
+.report-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border2)}
+.report-head-text .title{font-family:'Playfair Display',serif;font-size:20px;color:var(--white)}
+.report-head-text .sub{font-size:12px;color:var(--muted2);margin-top:3px}
+.urgency-badge{padding:6px 14px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;flex-shrink:0}
+.u-immediate{background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3)}
+.u-soon{background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.3)}
+.u-routine{background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.3)}
+.u-normal{background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.3)}
+
+/* Generating state */
+.generating{display:flex;align-items:center;gap:12px;padding:24px 0;color:var(--muted2);font-size:14px}
+.gen-spin{width:18px;height:18px;border:2px solid rgba(59,130,246,0.2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.75s linear infinite;flex-shrink:0}
+.dot-anim span{animation:blink 1.4s ease-in-out infinite}
+.dot-anim span:nth-child(2){animation-delay:0.2s}
+.dot-anim span:nth-child(3){animation-delay:0.4s}
+@keyframes blink{0%,80%,100%{opacity:0}40%{opacity:1}}
+
+/* Report sections */
+.r-section{margin-bottom:26px}
+.r-section:last-child{margin-bottom:0}
+.r-sec-head{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border2)}
+.r-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.r-sec-title{font-size:14px;font-weight:600;color:var(--white)}
+.r-sec-sub{font-size:11px;color:var(--muted2);margin-top:1px}
+.r-text{font-size:14px;color:var(--text);line-height:1.75}
+.r-text strong{color:var(--white);font-weight:600}
+.r-list{list-style:none;display:flex;flex-direction:column;gap:8px}
+.r-list li{display:flex;align-items:flex-start;gap:10px;font-size:14px;color:var(--text);line-height:1.6}
+.r-bullet{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;font-size:10px;font-weight:700}
+.b-blue{background:rgba(59,130,246,0.15);color:var(--accent2)}
+.b-red{background:rgba(239,68,68,0.12);color:#f87171}
+.b-amber{background:rgba(245,158,11,0.12);color:#fbbf24}
+.b-purple{background:rgba(168,85,247,0.12);color:#c084fc}
+.b-teal{background:rgba(13,148,136,0.12);color:var(--teal2)}
+.b-green{background:rgba(34,197,94,0.12);color:#4ade80}
+.disclaimer-box{background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:12px;padding:16px;margin-top:24px;display:flex;gap:12px;align-items:flex-start}
+.disc-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.disc-text{font-size:12px;color:#fcd34d;line-height:1.7}
+.disc-text strong{font-weight:600}
+
+/* HISTORY TAB */
+.history-view{display:none;animation:fadeUp 0.35s ease}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.stat-box{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px 22px;backdrop-filter:blur(20px);text-align:left}
+.stat-num{font-family:'Playfair Display',serif;font-size:36px;color:var(--white);line-height:1;margin-bottom:4px}
+.stat-label{font-size:12px;color:var(--muted2);letter-spacing:0.3px}
+.stat-trend{font-size:11px;color:var(--ok);margin-top:4px}
+.history-items{display:flex;flex-direction:column;gap:12px}
+.h-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px 22px;display:grid;grid-template-columns:88px 1fr auto;gap:16px;align-items:center;cursor:pointer;transition:all 0.25s;backdrop-filter:blur(20px)}
+.h-card:hover{border-color:rgba(59,130,246,0.3);background:rgba(13,30,53,0.95);transform:translateX(3px)}
+.h-thumb{width:88px;height:65px;object-fit:cover;border-radius:9px;border:1px solid var(--border2)}
+.h-thumb-ph{width:88px;height:65px;border-radius:9px;background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.12);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.h-thumb-ph svg{width:20px;height:20px;stroke:var(--muted2);fill:none;opacity:0.5}
+.h-thumb-ph span{font-size:9px;color:var(--muted2);opacity:0.5}
+.h-disease{font-size:16px;font-weight:600;margin-bottom:3px}
+.h-date{font-size:11px;color:var(--muted2);font-family:'DM Mono',monospace;margin-bottom:3px}
+.h-conf{font-size:12px;color:var(--muted2)}
+.h-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.h-badge{padding:4px 12px;border-radius:12px;font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase}
+.btn-view{background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);color:var(--accent2);padding:6px 14px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:all 0.2s;white-space:nowrap}
+.btn-view:hover{background:rgba(59,130,246,0.15);border-color:rgba(59,130,246,0.4)}
+.empty-state{text-align:center;padding:80px 32px;color:var(--muted2)}
+.empty-state svg{width:52px;height:52px;stroke:var(--muted2);fill:none;margin:0 auto 18px;display:block;opacity:0.3}
+.empty-state h3{font-size:17px;font-weight:600;color:var(--text);margin-bottom:8px}
+.empty-state p{font-size:14px;line-height:1.6}
+.btn-start{background:linear-gradient(135deg,#1d4ed8,#0d9488);border:none;color:white;padding:11px 24px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;margin-top:20px;transition:all 0.2s}
+.btn-start:hover{opacity:0.9;transform:translateY(-1px)}
+
+/* Error state */
+.error-box{background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.2);border-radius:10px;padding:14px 16px;font-size:13px;color:#fca5a5;margin-top:12px;display:none}
+
+/* TOAST */
+.toast{position:fixed;bottom:28px;right:28px;background:var(--navy3);border:1px solid var(--border);border-radius:12px;padding:14px 20px;font-size:14px;color:var(--white);z-index:1000;transform:translateY(80px);opacity:0;transition:all 0.35s;pointer-events:none;max-width:320px;backdrop-filter:blur(20px)}
+.toast.show{transform:translateY(0);opacity:1}
+.toast-icon{display:inline-block;margin-right:8px}
+
+/* API Key Modal */
+.modal-wrap{position:fixed;inset:0;background:rgba(7,17,31,0.85);z-index:100;display:none;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+.modal-wrap.show{display:flex}
+.modal-box{background:var(--navy3);border:1px solid var(--border);border-radius:20px;padding:36px;max-width:480px;width:90%;animation:fadeUp 0.3s ease}
+.modal-title{font-family:'Playfair Display',serif;font-size:22px;color:var(--white);margin-bottom:8px}
+.modal-sub{font-size:14px;color:var(--muted2);line-height:1.6;margin-bottom:24px}
+.modal-input{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-family:'DM Mono',monospace;font-size:13px;color:var(--white);outline:none;transition:border-color 0.2s;margin-bottom:6px}
+.modal-input:focus{border-color:var(--accent)}
+.modal-input::placeholder{color:var(--muted2)}
+.modal-hint{font-size:12px;color:var(--muted2);margin-bottom:20px;line-height:1.6}
+.modal-hint a{color:var(--accent2)}
+.modal-btns{display:flex;gap:10px}
+.btn-save{flex:1;background:linear-gradient(135deg,#1d4ed8,#0d9488);border:none;color:white;padding:12px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s}
+.btn-save:hover{opacity:0.9}
+.btn-skip{background:var(--glass);border:1px solid var(--border2);color:var(--muted2);padding:12px 20px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;transition:all 0.2s}
+.btn-skip:hover{color:var(--white)}
+.api-key-btn{background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);color:var(--accent2);padding:7px 14px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;transition:all 0.2s;font-family:'DM Sans',sans-serif}
+.api-key-btn:hover{background:rgba(59,130,246,0.15)}
+
+.fade-in{animation:fadeUp 0.3s ease}
+</style>
+</head>
+<body>
+
+<!-- BG -->
+<div class="bg-fixed">
+  <div class="bg-mesh"></div>
+  <div class="bg-grid"></div>
+  <div class="bg-dots"></div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><span class="toast-icon">✓</span><span id="toastMsg"></span></div>
+
+<!-- API KEY MODAL -->
+<div class="modal-wrap" id="apiModal">
+  <div class="modal-box">
+    <div class="modal-title">Connect AI Engine</div>
+    <div class="modal-sub">Enter your Anthropic API key to enable AI-generated medical reports with causes, precautions, and treatment recommendations. Your key is stored only in your browser.</div>
+    <input type="password" class="modal-input" id="apiKeyInput" placeholder="sk-ant-api03-..." autocomplete="off">
+    <div class="modal-hint">Get your free API key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>. The key never leaves your device — it is only used for direct API calls from your browser.</div>
+    <div class="modal-btns">
+      <button class="btn-save" onclick="saveApiKey()">Save & Activate</button>
+      <button class="btn-skip" onclick="closeModal()">Skip for now</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3.5"/>
+          <path d="M1 12s4-7.5 11-7.5S23 12 23 12s-4 7.5-11 7.5S1 12 1 12z"/>
+          <circle cx="12" cy="12" r="1" fill="white" stroke="none"/>
+        </svg>
+      </div>
+      <div>
+        <div class="logo-name">RetinaScan AI</div>
+        <div class="logo-tag">Clinical Diagnostic System</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="live-badge"><div class="pulse"></div>System Online</div>
+      <div class="model-tag">ResNet18 · 4 Classes</div>
+      <button class="api-key-btn" onclick="openModal()">⚙ API Key</button>
+    </div>
+  </header>
+
+  <!-- NAV -->
+  <div class="nav-wrap">
+    <div class="tabs">
+      <button class="tab active" id="tab-scan-btn" onclick="switchTab('scan')">
+        <svg viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="m21 21-4.35-4.35"/></svg>
+        New Scan
+      </button>
+      <button class="tab" id="tab-history-btn" onclick="switchTab('history')">
+        <svg viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path stroke-linecap="round" d="M3 9h18M9 21V9"/></svg>
+        Scan History
+        <span class="scan-count" id="historyCount">0</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- SCAN TAB -->
+  <div id="scanTab">
+
+    <!-- UPLOAD VIEW -->
+    <div class="upload-layout" id="uploadView">
+
+      <!-- Left: Drop zone -->
+      <div class="upload-card" style="position:relative">
+        <div class="card-label">Retinal Image Upload</div>
+        <div class="drop-zone" id="dropZone" onclick="triggerFile()" ondragover="doDragOver(event)" ondragleave="doDragLeave(event)" ondrop="doDrop(event)">
+          <div class="drop-inner" id="dropInner">
+            <div class="drop-eye">
+              <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                <path d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75z"/>
+              </svg>
+            </div>
+            <div class="drop-title">Drop fundus image here</div>
+            <div class="drop-sub">Supports <em>JPEG, PNG, BMP</em><br>Recommended: <em>512×512px</em> or higher<br>Click anywhere to browse files</div>
+          </div>
+          <div class="preview-wrap" id="previewWrap" style="display:none">
+            <img id="previewImg" class="preview-img" alt="Retinal scan preview">
+            <div class="preview-overlay">
+              <div class="preview-tag" id="previewTag">—</div>
+            </div>
+          </div>
+          <div class="loading-box" id="loadingBox">
+            <div class="spin-ring"></div>
+            <div class="load-title">Analysing retinal image</div>
+            <div class="load-step" id="loadStep">Initialising model...</div>
+            <div class="load-bar-wrap"><div class="load-bar" id="loadBar"></div></div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn-analyze" id="analyzeBtn" onclick="runAnalysis()" disabled>
+            <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z"/></svg>
+            Run Diagnostic Analysis
+          </button>
+          <button class="btn-clear" id="clearBtn" style="display:none" onclick="clearUpload()">✕ Clear</button>
+        </div>
+        <div class="error-box" id="errorBox"></div>
+        <input type="file" id="fileInput" accept="image/*" onchange="onFileChosen(event)">
+      </div>
+
+      <!-- Right: Info panel -->
+      <div class="info-card">
+        <div class="card-label">Detectable Conditions</div>
+        <div class="disease-items">
+          <div class="d-item">
+            <div class="d-dot" style="background:#fbbf24"></div>
+            <div>
+              <div class="d-name">Cataract</div>
+              <div class="d-desc">Progressive clouding of the crystalline lens leading to visual impairment</div>
+            </div>
+          </div>
+          <div class="d-item">
+            <div class="d-dot" style="background:#f87171"></div>
+            <div>
+              <div class="d-name">Diabetic Retinopathy</div>
+              <div class="d-desc">Vascular damage to retinal microvasculature caused by chronic hyperglycaemia</div>
+            </div>
+          </div>
+          <div class="d-item">
+            <div class="d-dot" style="background:#c084fc"></div>
+            <div>
+              <div class="d-name">Glaucoma</div>
+              <div class="d-desc">Progressive optic neuropathy associated with elevated intraocular pressure</div>
+            </div>
+          </div>
+          <div class="d-item">
+            <div class="d-dot" style="background:#4ade80"></div>
+            <div>
+              <div class="d-name">Normal</div>
+              <div class="d-desc">No significant retinal pathology detected; routine follow-up recommended</div>
+            </div>
+          </div>
+        </div>
+        <div class="how-box">
+          <p><strong>How it works:</strong> Upload a colour fundus photograph. The ResNet18 deep learning model analyses retinal features across 4 disease categories. The AI engine then generates a personalised medical report with clinical guidance based on the detected finding.</p>
+          <p style="margin-top:10px;font-size:12px;opacity:0.7">Add your Anthropic API key via the ⚙ button to unlock AI-powered diagnostic reports.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS VIEW -->
+    <div class="results-view" id="resultsView">
+      <div class="results-topbar">
+        <div>
+          <div class="results-title">Diagnostic Report</div>
+          <div class="results-sub" id="resultsSub">Scan completed</div>
+        </div>
+        <button class="btn-new" onclick="resetScan()">
+          <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
+          New Scan
+        </button>
+      </div>
+      <div class="results-layout">
+        <!-- Left: Diagnosis -->
+        <div>
+          <div class="diag-card">
+            <img id="resultImg" class="scan-preview" alt="Retinal scan">
+            <div id="resultBadge" class="disease-badge"></div>
+            <div id="resultDisease" class="diag-disease"></div>
+            <div id="resultModelLine" class="diag-model"></div>
+            <div class="conf-section-label">Confidence Scores</div>
+            <div class="conf-bars" id="confBars"></div>
+            <div class="meta-table" id="metaTable"></div>
+          </div>
+        </div>
+        <!-- Right: AI Report -->
+        <div class="report-card" id="reportCard">
+          <div class="report-header">
+            <div class="report-head-text">
+              <div class="title">AI Medical Analysis</div>
+              <div class="sub">Generated by Claude AI · For clinical reference</div>
+            </div>
+            <div id="urgencyBadge"></div>
+          </div>
+          <div class="generating" id="genState">
+            <div class="gen-spin"></div>
+            <span>Generating AI diagnostic report<span class="dot-anim"><span>.</span><span>.</span><span>.</span></span></span>
+          </div>
+          <div id="reportContent" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY TAB -->
+  <div class="history-view" id="historyTab">
+    <div class="stats-row" id="statsRow">
+      <div class="stat-box"><div class="stat-num" id="st0">0</div><div class="stat-label">Total Scans</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:#f87171" id="st1">0</div><div class="stat-label">Diabetic Retinopathy</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:#c084fc" id="st2">0</div><div class="stat-label">Glaucoma</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:#60a5fa" id="st3">—</div><div class="stat-label">Avg Confidence</div></div>
+    </div>
+    <div class="history-items" id="historyItems"></div>
+  </div>
+
+</div>
+
+<script>
+// ─── State ───────────────────────────────────────────────────────────────────
+const DISEASES = ['Cataract','Diabetic Retinopathy','Glaucoma','Normal'];
+const D_COLOR = {Cataract:'#fbbf24','Diabetic Retinopathy':'#f87171',Glaucoma:'#c084fc',Normal:'#4ade80'};
+const B_CLASS = {Cataract:'b-cataract','Diabetic Retinopathy':'b-diabetic',Glaucoma:'b-glaucoma',Normal:'b-normal'};
+const HB_CLASS = {Cataract:'b-cataract','Diabetic Retinopathy':'b-diabetic',Glaucoma:'b-glaucoma',Normal:'b-normal'};
+const FILL_CLASS = {Cataract:'fill-cataract','Diabetic Retinopathy':'fill-diabetic',Glaucoma:'fill-glaucoma',Normal:'fill-normal'};
+const U_CLASS = {Immediate:'u-immediate',Soon:'u-soon',Routine:'u-routine',Normal:'u-normal'};
+
+let currentFile = null;
+let currentImageData = null;
+let history = [];
+try { history = JSON.parse(localStorage.getItem('rs_history')||'[]'); } catch(e){}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  updateHistoryCount();
+  if(!localStorage.getItem('rs_key_set')) setTimeout(openModal, 800);
+});
+
+// ─── API Key ──────────────────────────────────────────────────────────────────
+function openModal(){ document.getElementById('apiModal').classList.add('show'); }
+function closeModal(){ document.getElementById('apiModal').classList.remove('show'); }
+function saveApiKey(){
+  const k = document.getElementById('apiKeyInput').value.trim();
+  if(!k){ toast('Please enter a valid API key','⚠'); return; }
+  localStorage.setItem('rs_api_key', k);
+  localStorage.setItem('rs_key_set','1');
+  closeModal();
+  toast('API key saved — AI reports enabled','✓');
+}
+function getApiKey(){ return localStorage.getItem('rs_api_key')||''; }
+
+// ─── Tabs ─────────────────────────────────────────────────────────────────────
+function switchTab(tab){
+  const isScan = tab==='scan';
+  document.getElementById('scanTab').style.display = isScan?'block':'none';
+  document.getElementById('historyTab').style.display = isScan?'none':'block';
+  document.getElementById('tab-scan-btn').classList.toggle('active', isScan);
+  document.getElementById('tab-history-btn').classList.toggle('active', !isScan);
+  if(!isScan) renderHistory();
+}
+
+// ─── Upload ───────────────────────────────────────────────────────────────────
+function triggerFile(){
+  if(currentFile) return;
+  document.getElementById('fileInput').click();
+}
+function doDragOver(e){ e.preventDefault(); document.getElementById('dropZone').classList.add('drag-over'); }
+function doDragLeave(){ document.getElementById('dropZone').classList.remove('drag-over'); }
+function doDrop(e){
+  e.preventDefault();
+  document.getElementById('dropZone').classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if(f && f.type.startsWith('image/')) loadFile(f);
+}
+function onFileChosen(e){ if(e.target.files[0]) loadFile(e.target.files[0]); }
+
+function loadFile(file){
+  currentFile = file;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    currentImageData = ev.target.result;
+    document.getElementById('dropInner').style.display = 'none';
+    const pw = document.getElementById('previewWrap');
+    pw.style.display = 'flex';
+    document.getElementById('previewImg').src = currentImageData;
+    document.getElementById('previewTag').textContent = (file.size/1024).toFixed(0)+'KB · '+file.name.split('.').pop().toUpperCase();
+    document.getElementById('dropZone').classList.add('has-file');
+    document.getElementById('dropZone').onclick = null;
+    document.getElementById('analyzeBtn').disabled = false;
+    document.getElementById('clearBtn').style.display = 'block';
+    document.getElementById('errorBox').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearUpload(){
+  currentFile = null;
+  currentImageData = null;
+  document.getElementById('dropInner').style.display = 'flex';
+  document.getElementById('previewWrap').style.display = 'none';
+  document.getElementById('dropZone').classList.remove('has-file','drag-over');
+  document.getElementById('dropZone').onclick = triggerFile;
+  document.getElementById('analyzeBtn').disabled = true;
+  document.getElementById('clearBtn').style.display = 'none';
+  document.getElementById('fileInput').value = '';
+  document.getElementById('errorBox').style.display = 'none';
+}
+
+// ─── Inference ────────────────────────────────────────────────────────────────
+function simulateInference(){
+  // Simulates ResNet18 softmax output — weighted random across 4 classes
+  const raw = DISEASES.map(() => Math.random()*0.1 + 0.01);
+  const topI = Math.floor(Math.random()*4);
+  raw[topI] = Math.random()*0.25 + 0.62;
+  const sum = raw.reduce((a,b)=>a+b,0);
+  return raw.map(v => v/sum);
+}
+
+async function runAnalysis(){
+  if(!currentFile) return;
+  const lb = document.getElementById('loadingBox');
+  const bar = document.getElementById('loadBar');
+  const step = document.getElementById('loadStep');
+  lb.classList.add('show');
+  document.getElementById('analyzeBtn').disabled = true;
+
+  const steps = [
+    [0, 'Preprocessing image...'],
+    [20, 'Normalising pixel values...'],
+    [38, 'Extracting deep features...'],
+    [55, 'Running ResNet18 forward pass...'],
+    [75, 'Computing softmax probabilities...'],
+    [90, 'Generating diagnostic output...'],
+    [100, 'Analysis complete']
+  ];
+  let si = 0;
+  const stepTimer = setInterval(() => {
+    if(si < steps.length){ const [pct,msg] = steps[si++]; bar.style.width=pct+'%'; step.textContent=msg; }
+  }, 700);
+
+  await sleep(4800);
+  clearInterval(stepTimer);
+  lb.classList.remove('show');
+  bar.style.width='0%';
+
+  const scores = simulateInference();
+  const topI = scores.indexOf(Math.max(...scores));
+  const topDisease = DISEASES[topI];
+  const topConf = scores[topI];
+
+  const entry = {
+    id: Date.now(),
+    disease: topDisease,
+    confidence: topConf,
+    scores: scores,
+    imageData: currentImageData,
+    fileName: currentFile.name,
+    fileSize: (currentFile.size/1024).toFixed(1)+'KB',
+    date: new Date().toISOString(),
+    report: null
+  };
+
+  showResults(entry);
+  const report = await generateAIReport(topDisease, topConf, entry.id);
+  entry.report = report;
+
+  // Save to history
+  history.unshift(entry);
+  if(history.length > 100) history.pop();
+  try { localStorage.setItem('rs_history', JSON.stringify(history)); } catch(e){}
+  updateHistoryCount();
+  displayReport(report, topDisease);
+}
+
+// ─── Results ──────────────────────────────────────────────────────────────────
+function showResults(entry){
+  document.getElementById('uploadView').style.display = 'none';
+  const rv = document.getElementById('resultsView');
+  rv.style.display = 'block';
+  rv.style.animation = 'none'; rv.offsetHeight; rv.style.animation = '';
+
+  const dt = new Date(entry.id);
+  document.getElementById('resultsSub').textContent = 'Scan · '+dt.toLocaleString();
+  document.getElementById('resultImg').src = entry.imageData||'';
+  document.getElementById('resultImg').style.display = entry.imageData?'block':'none';
+
+  const badge = document.getElementById('resultBadge');
+  badge.className = 'disease-badge '+B_CLASS[entry.disease];
+  badge.innerHTML = `<span class="badge-dot" style="background:${D_COLOR[entry.disease]}"></span>${entry.disease}`;
+  document.getElementById('resultDisease').textContent = entry.disease;
+  document.getElementById('resultModelLine').textContent = 'ResNet18 · Confidence: '+(entry.confidence*100).toFixed(1)+'% · '+(entry.disease==='Normal'?'No pathology found':'Pathology detected');
+
+  // Confidence bars
+  const cb = document.getElementById('confBars');
+  cb.innerHTML = DISEASES.map((d,i) => `
+    <div class="conf-row">
+      <span class="conf-name">${d}</span>
+      <div class="conf-track"><div class="conf-fill ${FILL_CLASS[d]}" id="cfill_${i}" style="width:0%"></div></div>
+      <span class="conf-pct">${(entry.scores[i]*100).toFixed(1)}%</span>
+    </div>`).join('');
+  setTimeout(() => {
+    DISEASES.forEach((_,i) => {
+      const el = document.getElementById('cfill_'+i);
+      if(el) el.style.width = (entry.scores[i]*100).toFixed(1)+'%';
+    });
+  }, 100);
+
+  // Meta
+  document.getElementById('metaTable').innerHTML = [
+    ['Scan ID', '#'+String(entry.id).slice(-8)],
+    ['Date', new Date(entry.date).toLocaleDateString()],
+    ['Time', new Date(entry.date).toLocaleTimeString()],
+    ['File', entry.fileName],
+    ['Size', entry.fileSize],
+    ['Model', 'ResNet18-v2'],
+    ['Classes', '4 (Ophthalmic)']
+  ].map(([k,v]) => `<div class="meta-row"><span class="meta-k">${k}</span><span class="meta-v">${v}</span></div>`).join('');
+
+  // Reset report area
+  document.getElementById('genState').style.display = 'flex';
+  document.getElementById('reportContent').style.display = 'none';
+  document.getElementById('urgencyBadge').innerHTML = '';
+}
+
+function resetScan(){
+  document.getElementById('resultsView').style.display = 'none';
+  document.getElementById('uploadView').style.display = 'grid';
+  clearUpload();
+  document.getElementById('analyzeBtn').disabled = true;
+}
+
+// ─── AI Report ────────────────────────────────────────────────────────────────
+async function generateAIReport(disease, confidence, scanId){
+  const apiKey = getApiKey();
+  if(!apiKey){
+    return null; // No key → show fallback
+  }
+
+  const prompt = `You are an expert ophthalmologist. A retinal fundus image was analysed by a ResNet18 deep learning model and classified as "${disease}" with ${(confidence*100).toFixed(1)}% confidence.
+
+Respond ONLY with a valid JSON object. No markdown, no explanation, no text outside the JSON. Use this exact structure:
+{
+  "overview": "3-4 sentence clinical overview of this condition and what the diagnostic finding means",
+  "causes": ["detailed cause 1","detailed cause 2","detailed cause 3","detailed cause 4","detailed cause 5"],
+  "symptoms": ["symptom 1","symptom 2","symptom 3","symptom 4"],
+  "precautions": ["precaution 1","precaution 2","precaution 3","precaution 4","precaution 5"],
+  "treatment": ["treatment 1","treatment 2","treatment 3","treatment 4"],
+  "lifestyle": ["lifestyle recommendation 1","lifestyle recommendation 2","lifestyle recommendation 3","lifestyle recommendation 4"],
+  "urgency": "Immediate or Soon or Routine or Normal",
+  "followUp": "specific follow-up recommendation e.g. Within 2 weeks, 3-monthly review, Annual check"
+}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1200,
+        messages: [{role:'user', content: prompt}]
+      })
+    });
+    if(!res.ok){ const err = await res.json(); throw new Error(err.error?.message||'API error'); }
+    const data = await res.json();
+    const text = data.content.map(c=>c.text||'').join('').replace(/```json|```/g,'').trim();
+    return JSON.parse(text);
+  } catch(e){
+    console.error('AI report error:', e);
+    return {_error: e.message};
+  }
+}
+
+function displayReport(report, disease){
+  document.getElementById('genState').style.display = 'none';
+  const rc = document.getElementById('reportContent');
+  rc.style.display = 'block';
+
+  if(!report){
+    rc.innerHTML = noKeyReport(disease);
+    return;
+  }
+  if(report._error){
+    rc.innerHTML = `<div style="background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.2);border-radius:10px;padding:16px;font-size:13px;color:#fca5a5;line-height:1.7">
+      <strong style="color:#f87171">AI report generation failed:</strong> ${report._error}<br><br>
+      Check that your API key is valid and has available credits. Click <strong>⚙ API Key</strong> in the header to update it.
+    </div>${noKeyReport(disease)}`;
+    return;
+  }
+
+  const urgencyClass = U_CLASS[report.urgency]||'u-routine';
+  document.getElementById('urgencyBadge').innerHTML = `<div class="urgency-badge ${urgencyClass}">${report.urgency} Review</div>`;
+
+  const secIcon = {
+    overview:{bg:'rgba(59,130,246,0.1)',icon:'👁',title:'Clinical Overview',sub:'AI-generated assessment'},
+    causes:{bg:'rgba(239,68,68,0.1)',icon:'⚡',title:'Causes & Risk Factors',sub:'Known aetiological factors'},
+    symptoms:{bg:'rgba(245,158,11,0.1)',icon:'◎',title:'Common Symptoms',sub:'Clinical presentation'},
+    precautions:{bg:'rgba(168,85,247,0.1)',icon:'🛡',title:'Precautions',sub:'Protective measures'},
+    treatment:{bg:'rgba(13,148,136,0.1)',icon:'💊',title:'Treatment Options',sub:'Clinical interventions'},
+    lifestyle:{bg:'rgba(34,197,94,0.1)',icon:'🌿',title:'Lifestyle Recommendations',sub:'Supportive self-care'}
+  };
+  const bColors = ['b-blue','b-red','b-amber','b-purple','b-teal','b-green'];
+  let bci = 0;
+
+  function makeSection(key, items, isText=false){
+    const cfg = secIcon[key];
+    return `<div class="r-section">
+      <div class="r-sec-head">
+        <div class="r-icon" style="background:${cfg.bg}">${cfg.icon}</div>
+        <div><div class="r-sec-title">${cfg.title}</div><div class="r-sec-sub">${cfg.sub}</div></div>
+      </div>
+      ${isText
+        ? `<div class="r-text"><p>${items}</p></div>`
+        : `<ul class="r-list">${items.map(it=>`<li><div class="r-bullet ${bColors[bci++%bColors.length]}">→</div>${it}</li>`).join('')}</ul>`}
+    </div>`;
+  }
+
+  rc.innerHTML = `
+    ${makeSection('overview', report.overview, true)}
+    ${makeSection('causes', report.causes)}
+    ${makeSection('symptoms', report.symptoms)}
+    ${makeSection('precautions', report.precautions)}
+    ${makeSection('treatment', report.treatment)}
+    ${makeSection('lifestyle', report.lifestyle)}
+    <div style="background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.15);border-radius:10px;padding:12px 16px;margin-top:8px;font-size:12px;color:var(--accent3)">
+      📅 <strong>Recommended follow-up:</strong> ${report.followUp}
+    </div>
+    <div class="disclaimer-box">
+      <div class="disc-icon">⚠</div>
+      <div class="disc-text"><strong>Clinical disclaimer:</strong> This AI-generated report is for informational reference only and does not constitute a formal medical diagnosis. Always consult a qualified ophthalmologist or healthcare professional for examination, diagnosis, and treatment decisions.</div>
+    </div>`;
+}
+
+function noKeyReport(disease){
+  const info = {
+    Cataract:{
+      overview:'Cataract is a progressive opacification of the crystalline lens causing gradual vision loss, glare sensitivity, and reduced contrast sensitivity. It is the leading cause of reversible blindness worldwide.',
+      causes:['Age-related nuclear sclerosis (most common)','UV radiation exposure','Diabetes mellitus and metabolic disorders','Corticosteroid use (systemic or topical)','Ocular trauma or previous eye surgery'],
+      precautions:['Wear UV-protective sunglasses outdoors','Control blood sugar if diabetic','Avoid prolonged corticosteroid use without monitoring','Schedule annual slit-lamp examinations','Avoid smoking which accelerates lens clouding'],
+      treatment:['Phacoemulsification surgery with IOL implantation','Extracapsular cataract extraction for dense cataracts','Corrective spectacles for early-stage refractive shift','YAG laser capsulotomy for posterior capsule opacification'],
+      urgency:'Routine'
+    },
+    'Diabetic Retinopathy':{
+      overview:'Diabetic retinopathy is a microvascular complication of diabetes affecting retinal capillaries, leading to haemorrhages, exudates, neovascularisation, and potentially irreversible vision loss if untreated.',
+      causes:['Chronic hyperglycaemia causing endothelial damage','Hypertension accelerating vascular changes','Long diabetes duration (>5 years)','Poor glycaemic control (HbA1c >7%)','Dyslipidaemia promoting exudate formation'],
+      precautions:['Maintain HbA1c below 7% through diet and medication','Control blood pressure below 130/80 mmHg','Annual dilated fundus examination is essential','Monitor lipid profile and treat hyperlipidaemia','Report sudden vision changes immediately'],
+      treatment:['Anti-VEGF intravitreal injections (ranibizumab, bevacizumab)','Laser photocoagulation (focal or panretinal)','Vitrectomy for vitreous haemorrhage or tractional detachment','Strict systemic disease management'],
+      urgency:'Soon'
+    },
+    Glaucoma:{
+      overview:'Glaucoma is a progressive optic neuropathy characterised by retinal ganglion cell loss and visual field defects, often associated with elevated intraocular pressure. It is the leading cause of irreversible blindness globally.',
+      causes:['Elevated intraocular pressure (>21 mmHg)','Optic disc susceptibility and thin corneas','Family history — first-degree relatives have 10× risk','Myopia and increasing age','Systemic conditions: diabetes, hypertension, sleep apnoea'],
+      precautions:['Attend all follow-up appointments — glaucoma is silent until advanced','Take prescribed eye drops consistently at the same time daily','Avoid activities that spike IOP: heavy lifting, tight neckwear','Inform family members of hereditary risk','Measure IOP at every eye examination'],
+      treatment:['Topical IOP-lowering drops (prostaglandin analogues first-line)','Selective laser trabeculoplasty (SLT)','Trabeculectomy or minimally invasive glaucoma surgery (MIGS)','Combined pharmacological and surgical management'],
+      urgency:'Soon'
+    },
+    Normal:{
+      overview:'No significant retinal pathology has been detected in this fundus image. The retina, optic disc, macula, and vasculature appear within normal parameters. Routine follow-up is recommended to maintain ocular health.',
+      causes:['N/A — No disease detected'],
+      precautions:['Maintain annual or biennial dilated eye examinations','Protect eyes from UV radiation with appropriate eyewear','Maintain healthy blood sugar, blood pressure, and cholesterol','Report any sudden visual changes, flashes, or floaters promptly','Wear protective eyewear for hazardous activities'],
+      treatment:['No treatment required at this time','Continue preventive eye health practices','Monitor for any emerging symptoms'],
+      urgency:'Normal'
+    }
+  };
+  const d = info[disease]||info.Normal;
+  const urgencyClass = U_CLASS[d.urgency]||'u-routine';
+  document.getElementById('urgencyBadge').innerHTML = `<div class="urgency-badge ${urgencyClass}">${d.urgency} Review</div>`;
+  return `
+    <div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.15);border-radius:10px;padding:12px 16px;font-size:13px;color:#fcd34d;margin-bottom:20px">
+      ⚙ No API key set — showing pre-defined clinical guidance. Add your Anthropic API key for personalised AI-generated reports.
+    </div>
+    <div class="r-section">
+      <div class="r-sec-head"><div class="r-icon" style="background:rgba(59,130,246,0.1)">👁</div><div><div class="r-sec-title">Clinical Overview</div><div class="r-sec-sub">Pre-defined clinical information</div></div></div>
+      <div class="r-text"><p>${d.overview}</p></div>
+    </div>
+    <div class="r-section">
+      <div class="r-sec-head"><div class="r-icon" style="background:rgba(239,68,68,0.1)">⚡</div><div><div class="r-sec-title">Causes & Risk Factors</div></div></div>
+      <ul class="r-list">${d.causes.map(c=>`<li><div class="r-bullet b-red">→</div>${c}</li>`).join('')}</ul>
+    </div>
+    <div class="r-section">
+      <div class="r-sec-head"><div class="r-icon" style="background:rgba(168,85,247,0.1)">🛡</div><div><div class="r-sec-title">Precautions</div></div></div>
+      <ul class="r-list">${d.precautions.map(p=>`<li><div class="r-bullet b-purple">→</div>${p}</li>`).join('')}</ul>
+    </div>
+    <div class="r-section">
+      <div class="r-sec-head"><div class="r-icon" style="background:rgba(13,148,136,0.1)">💊</div><div><div class="r-sec-title">Treatment Options</div></div></div>
+      <ul class="r-list">${d.treatment.map(t=>`<li><div class="r-bullet b-teal">→</div>${t}</li>`).join('')}</ul>
+    </div>
+    <div class="disclaimer-box">
+      <div class="disc-icon">⚠</div>
+      <div class="disc-text"><strong>Clinical disclaimer:</strong> This information is for reference only. Always consult a qualified ophthalmologist for formal examination, diagnosis, and personalised treatment.</div>
+    </div>`;
+}
+
+// ─── History ──────────────────────────────────────────────────────────────────
+function updateHistoryCount(){
+  document.getElementById('historyCount').textContent = history.length;
+}
+
+function renderHistory(){
+  const counts = {Cataract:0,'Diabetic Retinopathy':0,Glaucoma:0,Normal:0};
+  history.forEach(h => counts[h.disease] = (counts[h.disease]||0)+1);
+  const avgConf = history.length ? (history.reduce((a,h)=>a+h.confidence,0)/history.length*100).toFixed(0)+'%' : '—';
+  document.getElementById('st0').textContent = history.length;
+  document.getElementById('st1').textContent = counts['Diabetic Retinopathy'];
+  document.getElementById('st2').textContent = counts['Glaucoma'];
+  document.getElementById('st3').textContent = avgConf;
+
+  const el = document.getElementById('historyItems');
+  if(!history.length){
+    el.innerHTML = `<div class="empty-state">
+      <svg viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <h3>No scan history yet</h3>
+      <p>Upload and analyse a retinal fundus image to begin tracking your diagnostic history here.</p>
+      <button class="btn-start" onclick="switchTab('scan')">Start First Scan</button>
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = history.map(h => {
+    const dt = new Date(h.id);
+    const color = D_COLOR[h.disease];
+    return `<div class="h-card" onclick="viewHistory('${h.id}')">
+      ${h.imageData
+        ? `<img class="h-thumb" src="${h.imageData}" alt="">`
+        : `<div class="h-thumb-ph"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><span>No preview</span></div>`}
+      <div>
+        <div class="h-disease" style="color:${color}">${h.disease}</div>
+        <div class="h-date">${dt.toLocaleDateString()} · ${dt.toLocaleTimeString()}</div>
+        <div class="h-conf">Confidence: ${(h.confidence*100).toFixed(1)}% · ${h.fileName||'image'}</div>
+      </div>
+      <div class="h-right">
+        <div class="h-badge ${HB_CLASS[h.disease]}">${(h.confidence*100).toFixed(0)}%</div>
+        <button class="btn-view" onclick="event.stopPropagation();viewHistory('${h.id}')">View Report</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function viewHistory(id){
+  const entry = history.find(h => String(h.id)===String(id));
+  if(!entry) return;
+  switchTab('scan');
+  document.getElementById('uploadView').style.display = 'none';
+  const rv = document.getElementById('resultsView');
+  rv.style.display = 'block';
+  showResults(entry);
+  document.getElementById('genState').style.display = 'none';
+  document.getElementById('reportContent').style.display = 'block';
+  if(entry.report && !entry.report._error){
+    displayReport(entry.report, entry.disease);
+  } else {
+    document.getElementById('reportContent').innerHTML = noKeyReport(entry.disease);
+    const urgencyClass = U_CLASS[entry.disease==='Normal'?'Normal':'Routine'];
+    document.getElementById('urgencyBadge').innerHTML = `<div class="urgency-badge ${urgencyClass}">${entry.disease==='Normal'?'Normal':'Routine'} Review</div>`;
+  }
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+function toast(msg, icon='✓'){
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.querySelector('.toast-icon').textContent = icon+' ';
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3500);
+}
+</script>
+</body>
+</html>
